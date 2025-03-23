@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Sensor Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #555;
+    }
+    #data-container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    .sensor-item {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fafafa;
+    }
+    .sensor-item h2 {
+      margin-top: 0;
+      color: #444;
+    }
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+    .data-item:last-child {
+      border-bottom: none;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Real-Time Sensor Data</h1>
+  <div id="data-container"></div>
+
+  <script>
+    // Connect to WebSocket server
+    const socket = new WebSocket('ws://localhost:3200/');
+
+    // Event: Connection opened
+    socket.addEventListener('open', () => {
+      console.log('Connected to WebSocket server');
+    });
+
+    // Event: Message received
+    socket.addEventListener('message', (event) => {
+      try {
+        // Parse the incoming data
+        const data = JSON.parse(event.data);
+        console.log('Received data:', data);
+
+        // Find or create a container for the sensor
+        let sensorElement = document.getElementById(`sensor-${data.client_id}`);
+        if (!sensorElement) {
+          sensorElement = document.createElement('div');
+          sensorElement.id = `sensor-${data.client_id}`;
+          sensorElement.className = 'sensor-item';
+          sensorElement.innerHTML = `
+            <h2>Sensor: ${data.client_id}</h2>
+            <div class="data-item">
+              <span class="label">Value:</span>
+              <span id="value-${data.client_id}">-</span>
+            </div>
+            <div class="data-item">
+              <span class="label">Timestamp:</span>
+              <span id="timestamp-${data.client_id}">-</span>
+            </div>
+          `;
+          document.getElementById('data-container').appendChild(sensorElement);
+        }
+
+        // Update the sensor's data
+        document.getElementById(`value-${data.client_id}`).textContent = data.analog_value.toFixed(2);
+        document.getElementById(`timestamp-${data.client_id}`).textContent = new Date(data.timestamp).toLocaleString();
+      } catch (err) {
+        console.error('Error parsing WebSocket message:', err);
+      }
+    });
+
+    // Event: Connection closed
+    socket.addEventListener('close', () => {
+      console.log('Disconnected from WebSocket server');
+    });
+
+    // Event: Error
+    socket.addEventListener('error', (err) => {
+      console.error('WebSocket error:', err);
+    });
+  </script>
+</body>
+</html>
